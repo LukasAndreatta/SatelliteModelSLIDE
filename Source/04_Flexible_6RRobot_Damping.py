@@ -27,6 +27,7 @@ simModel = Flex6RRobot(nStepsTotal=nStepsTotal, endTime=endTime,
 simModel.CreateModel([0]*6, flagComputeModel=True)
 
 myTestNumber = 1
+A_damping = 0.01 # relative amplitude to be damped down
 
 if myTestNumber == 1: 
     # running many randomized static tests ...
@@ -38,9 +39,12 @@ if myTestNumber == 1:
         simModel.CreateModel(q0)
         simModel.mbs.SolveStatic()
         # simModel.mbs.WaitForUserToContinue() # wait until spacebar is pressed
-        t_d, A_d = getDamping(simModel.mbs, 0.01, t=1)
+        t_d, A_d = getDamping(simModel.mbs, A_damping, t=1)
+        # the static solver is called to account for static deformation of the socket 
+        # in the respective configurations
         t_dList += [t_d]
         A_dList += [A_d]
+        
     print('max td: ', np.max(t_dList))
 
 elif myTestNumber == 2: # obtain damping for specific static configurations
@@ -48,6 +52,6 @@ elif myTestNumber == 2: # obtain damping for specific static configurations
     q0 = [0,  np.pi, -np.pi, -0.38, -2.64, -2.99]
     simModel.CreateModel(q0)
     simModel.mbs.SolveStatic()
-    t_d, A_d = getDamping(simModel.mbs, 0.01, t=1)
+    t_d, A_d = getDamping(simModel.mbs, A_damping, t=1)
     
     
