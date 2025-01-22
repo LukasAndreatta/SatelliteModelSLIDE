@@ -26,7 +26,7 @@ simModel = Flex6RRobot(nStepsTotal=nStepsTotal, endTime=endTime,
                  nOutputSteps = nOutput, EModulus = 1e9)
 simModel.CreateModel([0]*6, flagComputeModel=True)
 
-myTestNumber = 2
+myTestNumber = 1
 
 if myTestNumber == 1: 
     # running many randomized static tests ...
@@ -37,7 +37,7 @@ if myTestNumber == 1:
         print('q0: ', q0)
         simModel.CreateModel(q0)
         simModel.mbs.SolveStatic()
-        # simModel.mbs.WaitForUserToContinue()
+        # simModel.mbs.WaitForUserToContinue() # wait until spacebar is pressed
         t_d, A_d = getDamping(simModel.mbs, 0.01, t=1)
         t_dList += [t_d]
         A_dList += [A_d]
