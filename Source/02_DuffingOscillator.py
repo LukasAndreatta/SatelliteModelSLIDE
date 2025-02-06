@@ -167,7 +167,7 @@ if __name__ == '__main__': # needed to enable parallel processing of several tra
                    'case': [0,1,2], 
                   }
     tStart = time.time()
-    print('starting training. Please note that for multiprocessing on some machine no intermediate output is shown.')
+    print('starting training. Please note that for multiprocessing on some machines no intermediate output is shown.')
 
     [parameterDict, valueList] = ParameterVariation(parameterFunction=ParameterFunctionTraining, 
                                                    parameters=parameters,

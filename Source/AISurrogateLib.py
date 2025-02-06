@@ -1641,11 +1641,11 @@ class NeuralNetworkTrainingCenter():
                         data = data[0].T
                         dataRef = dataRef[0].T
                     # print('i: {} data shape: {}, dataRef shape: {}'.format(i, data.shape, dataRef.shape))
-                    mbs.PlotSensor(data, components=comp, componentsX=compX, newFigure=newFigure,
+                    mbs.PlotSensor([data], components=comp, componentsX=compX, newFigure=newFigure,
                                     labels='NN train'+str(i) + labelErr, 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
                                     colorCodeOffset=i%28, **plotOptions)
-                    mbs.PlotSensor(dataRef, components=comp, componentsX=compX, newFigure=False,
+                    mbs.PlotSensor([dataRef], components=comp, componentsX=compX, newFigure=False,
                                     labels='Ref train'+str(i), 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
                                     colorCodeOffset=i%28,lineStyles=[':'],
@@ -1709,12 +1709,12 @@ class NeuralNetworkTrainingCenter():
                         data = data[0].T
                         dataRef = dataRef[0].T
                         
-                    mbs.PlotSensor(data, components=comp, componentsX=compX, newFigure=newFigure,
+                    mbs.PlotSensor([data], components=comp, componentsX=compX, newFigure=newFigure,
                                     labels='NN test'+str(i) + labelErr, 
                                     # labels='', 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
                                     colorCodeOffset=i%28, **plotOptions)
-                    mbs.PlotSensor(dataRef, components=comp, componentsX=compX, newFigure=False,
+                    mbs.PlotSensor([dataRef], components=comp, componentsX=compX, newFigure=False,
                                     labels='Ref test'+str(i), 
                                     # labels='', # 'Ref ' + str(i), 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
@@ -1778,10 +1778,10 @@ class NeuralNetworkTrainingCenter():
                             data = data[0].T
                             dataRef = dataRef[0].T
                             
-                        mbs.PlotSensor(data, components=comp, componentsX=compX, newFigure=newFigure,
+                        mbs.PlotSensor([data], components=comp, componentsX=compX, newFigure=newFigure,
                                         labels='NN test'+str(i) + labelErr, xLabel = plotVars[0], yLabel=plotVars[1],
                                         colorCodeOffset=i%28, **plotOptions)
-                        mbs.PlotSensor(dataRef, components=comp, componentsX=compX, newFigure=False,
+                        mbs.PlotSensor([dataRef], components=comp, componentsX=compX, newFigure=False,
                                         labels='Ref test'+str(i), xLabel = plotVars[0], yLabel=plotVars[1],
                                         colorCodeOffset=i%28,lineStyles=[':'],
                                         fileName=fileName, **plotOptions)
