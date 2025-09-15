@@ -1,3 +1,6 @@
+##
+# Modified by Lukas Andreatta
+##
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #           AISurrogteLib
 #
@@ -167,7 +170,8 @@ def getDamping(mbs, A_d, t = None, flagDebug = True, nValues = 1, computeComplex
     t_dMax = - np.log(A_d)/(eVal[-nValues::])
     
     if flagDebug: 
-        print('largest damping time constant: ', roundSignificant(t_dMax, 3), '\n')
+        print('largest damping time constant: ', roundSignificant(t_dMax, 3))
+        print(f'largest eigen Freqency: {np.asarray(w).max()/(2*np.pi)} Hz', '\n')
     return t_dMax, eVal[-nValues::] 
 
 
@@ -634,20 +638,22 @@ def GetNumOfParameterRuns(parameters):
     return numRuns
 
 #%%++++++++++++++++++++++++++++++++++++++++++++++++++++++
+## modified by Lukas Andreatta
 #create training and test data
 #parameter function, allowing to run parallel using the global moduleNntc object
 def PVCreateData(parameterFunction):
-    global moduleNntc
     
-    simModel = moduleNntc.GetSimModel()
+    simModel = parameterFunction['functionData']['simModel']
     isTest = parameterFunction['functionData']['isTest']
     nSamples = parameterFunction['functionData']['nSamples']
     cnt = parameterFunction['cnt'] #usually not needed
     dataErrorEstimator = parameterFunction['functionData']['dataErrorEstimator']
     
     flattenData = False # parameterFunction['functionData']['flattenData']
-    if cnt % 100 == 0: 
-        print('cnt: ', cnt, flush=True)
+
+    cntPrint = 10
+    if cnt % cntPrint == 0: 
+        print('Started cnt: ', cnt, flush=True)
     seed = int(cnt)
     if isTest:
         seed = 2**31 - seed #2**32-1 is max value
@@ -656,15 +662,23 @@ def PVCreateData(parameterFunction):
 
     inputVec = simModel.CreateInputVector(relCnt = cnt/nSamples, isTest = isTest, dataErrorEstimator=dataErrorEstimator)
     hiddenVec = simModel.CreateHiddenInit(isTest)
-    outputVec = simModel.ComputeModel(inputVec, hiddenVec)
+    outputVec = simModel.ComputeModel(inputVec, hiddenVec, cnt=cnt)
+    
+    if cnt % cntPrint == 0: 
+        print('Finished cnt: ', cnt, flush=True)
 
     if flattenData:
-        return [[inputVec.flatten()], outputVec.flatten(), hiddenVec.flatten()]
-    else:
-        return [inputVec, outputVec, hiddenVec]
+        inputVec = inputVec.flatten()
+        outputVecs = outputVec.flatten()
+        hiddenVecs = hiddenVec.flatten()
+    # Old implementation
+    # if flattenData:
+    #     return [[inputVec.flatten()], outputVec.flatten(), hiddenVec.flatten()]
+    # else:
+    #     return [inputVec, outputVec, hiddenVec]
 
-    # inputs += [[inputVec.flatten()]]
-    # targets += [outputVec.flatten()]
+    inputVecs, outputVecs, hiddenVecs = simModel.ConvertToNNInputOutput(inputVec, outputVec, hiddenVec)
+    return [inputVecs, outputVecs, hiddenVecs]
 
 
 class NeuralNetworkTrainingCenter():
@@ -716,9 +730,8 @@ class NeuralNetworkTrainingCenter():
     def GetSimModel(self):
         return self.simulationModel
     
-    
-    
 
+    
     #serial version to create data
     def CreateData(self,parameterFunction):
         simulationModel = self.GetSimModel()
@@ -727,26 +740,22 @@ class NeuralNetworkTrainingCenter():
         showTests = parameterFunction['functionData']['showTests']
         dataErrorEstimator = parameterFunction['functionData']['dataErrorEstimator']
         
-        cnt = parameterFunction['cnt'] #usually not needed
-        # flattenData = False # parameterFunction['functionData']['flattenData']
-        
-        inputVec = simulationModel.CreateInputVector(relCnt = cnt/nSamples, isTest = isTest, 
+        cnt = parameterFunction['cnt'] 
+
+        simInputVec = simulationModel.CreateInputVector(relCnt = cnt/nSamples, isTest = isTest, 
                                                      dataErrorEstimator = dataErrorEstimator, )
-        # if dataErrorEstimator: 
-        #     inputVec *= 3
         hiddenVec = simulationModel.CreateHiddenInit(isTest)
-        outputVec = simulationModel.ComputeModel(inputVec,
+        simOutputVec = simulationModel.ComputeModel(simInputVec,
                                          hiddenData=hiddenVec, 
                                          solutionViewer = isTest and (cnt in showTests))
     
-        # if flattenData:
-            # return [[inputVec.flatten()], outputVec.flatten(), hiddenVec.flatten()]
-        # else:
-            # print('inputs shape=', inputVec.shape)
-        if hasattr(simulationModel, 'nCutInputSteps'):
-            inputVec = inputVec            
-        return [inputVec, outputVec, hiddenVec]
-    
+        inputVecs, outputVecs, hiddenVecs = simulationModel.ConvertToNNInputOutput(simInputVec, simOutputVec, hiddenVec)
+      
+        return [inputVecs, outputVecs, hiddenVecs]
+  
+
+
+    ## modified by Lukas Andreatta
     #create input data from model function
     #if plotData > 0, the first data is plotted
     #showTests is a list of tests which are shown with solution viewer (not parallel)
@@ -773,8 +782,6 @@ class NeuralNetworkTrainingCenter():
         self.inputsTestEst = []
         self.targetsTestEst = []
         
-        
-
         #initialization of hidden layers in RNN (optional)
         self.hiddenInitTraining = []
         self.hiddenInitTest = []
@@ -792,6 +799,8 @@ class NeuralNetworkTrainingCenter():
         except:
             nThreads = os.cpu_count()
             flagMPI = False
+        if numberOfThreads != None:
+            nThreads = numberOfThreads
         if useMultiProcessing:  
             print('create data by multiprocessing using {} threads'.format(nThreads), ', using MPI'*flagMPI, flush=True)
 
@@ -811,10 +820,7 @@ class NeuralNetworkTrainingCenter():
                 dataErrorEstimator = False 
                 
             paramDict = {}
-            if numberOfThreads != None:
-                paramDict['numberOfThreads'] = numberOfThreads
-            else: 
-                paramDict['numberOfThreads'] = nThreads 
+            paramDict['numberOfThreads'] = nThreads 
                 
             #+++++++++++++++++++++++++++++++++++++++++++++
             #create training data
@@ -822,12 +828,12 @@ class NeuralNetworkTrainingCenter():
             [parameterDict, values] = ParameterVariation(parameterFunction, parameters={'cnt':(0,nData-1,nData)},
                                                          useMultiProcessing=useMultiProcessing and nData>1,
                                                          showProgress=self.verboseMode>0, **paramDict,
-                                                         useMPI=flagMPI, 
+                                                         useMPI=flagMPI,
                                                          parameterFunctionData={'isTest':mode==1 or mode == 3, 
                                                                                 'nSamples':nData,
                                                                                 'showTests':showTests,
-                                                                                'dataErrorEstimator': dataErrorEstimator})
-                                                                                # 'flattenData':flattenData})
+                                                                                'dataErrorEstimator': dataErrorEstimator,
+                                                                                'simModel':self.GetSimModel()})
     
             for i, item in enumerate(values):
                 if type(item[0]) is tuple: 
@@ -835,25 +841,25 @@ class NeuralNetworkTrainingCenter():
                     if i == 0: 
                         print('Warning: Model should be 6R Flexible Robot, therefore the input is modified to cut off the trajectory object!')
                 if mode == 0:
-                    self.inputsTraining += [item[0]]
-                    self.targetsTraining += [item[1]]
-                    self.hiddenInitTraining += [item[2]]
+                    self.inputsTraining += list(item[0])
+                    self.targetsTraining += list(item[1])
+                    self.hiddenInitTraining += list(item[2])
+
                 elif mode == 1:
-                    self.inputsTest += [item[0]]
-                    self.targetsTest += [item[1]]
-                    self.hiddenInitTest += [item[2]]
-                    
+                    self.inputsTest += list(item[0])
+                    self.targetsTest += list(item[1])
+                    self.hiddenInitTest += list(item[2])
+
                 elif mode == 2: 
-                    self.inputsTrainingEst += [item[0]]
-                    self.targetsTrainingEst += [item[1]]
-                    self.hiddenInitTrainingEst += [item[2]]
+                    self.inputsTrainingEst += list(item[0])
+                    self.targetsTrainingEst += list(item[1])
+                    self.hiddenInitTrainingEst += list(item[2])
                     
                 elif mode == 3: 
-                    self.inputsTestEst += [item[0]]
-                    self.targetsTestEst += [item[1]]
-                    self.hiddenInitTestEst += [item[2]]
-                    
-                    
+                    self.inputsTestEst += list(item[0])
+                    self.targetsTestEst += list(item[1])
+                    self.hiddenInitTestEst += list(item[2])
+
                 else: 
                     raise ValueError 
                         
@@ -890,9 +896,9 @@ class NeuralNetworkTrainingCenter():
         
         
             
-
+    ## modified by Lukas Andreatta
     #save data to .npy file
-    def SaveTrainingAndTestsData(self, fileName):
+    def SaveTrainingAndTestsData(self, fileName, scaled = True):
         fileExtension = ''
         if len(fileName) < 4 or fileName[-4:]!='.npy':
             fileExtension = '.npy'
@@ -901,16 +907,41 @@ class NeuralNetworkTrainingCenter():
         
         dataDict = {}
         
-        dataDict['version'] = 2 #to check correct version
+        dataDict['version'] = 3 #to check correct version
         dataDict['ModelName'] = self.GetSimModel().GetModelName() #to check if correct name
         dataDict['inputShape'] = self.GetSimModel().GetInputScaling().shape #to check if correct size
         dataDict['outputShape'] = self.GetSimModel().GetOutputScaling().shape #to check if correct size
         dataDict['nTraining'] = self.nTraining
         dataDict['nTest'] = self.nTest
-        dataDict['inputsTraining'] = self.inputsTraining
-        dataDict['targetsTraining'] = self.targetsTraining
-        dataDict['inputsTest'] = self.inputsTest
-        dataDict['targetsTest'] = self.targetsTest
+        try:
+            dataDict['hSim'] = self.simulationModel.endTime/self.simulationModel.nStepsTotal
+        except NameError:
+            raise ValueError('The Simulation Model must contain an endTime! Otherwise step size h can not be calculated')
+
+        if not scaled:
+            # reverse scaling
+            unscaledInputsTraining = np.empty_like(self.inputsTraining)
+            unscaledOutputsTraining = np.empty_like(self.targetsTraining)
+
+            unscaledInputsTest = np.empty_like(self.inputsTest)
+            unscaledOutputsTest = np.empty_like(self.targetsTest)
+            
+            for i in range(self.nTraining):
+                unscaledInputsTraining[i] = self.inputsTraining[i] / self.simulationModel.GetInputScaling
+                unscaledOutputsTraining[i] = self.targetsTraining[i] / self.simulationModel.GetInputScaling
+            for i in range(self.nTest):
+                unscaledInputsTest[i] = self.inputsTest[i] / self.simulationModel.GetInputScaling
+                unscaledOutputsTest[i] = self.targetsTest[i] / self.simulationModel.GetInputScaling
+                
+            dataDict['inputsTraining'] = unscaledInputsTraining
+            dataDict['targetsTraining'] = unscaledOutputsTraining
+            dataDict['inputsTest'] = unscaledInputsTest
+            dataDict['targetsTest'] = unscaledOutputsTest
+        else:
+            dataDict['inputsTraining'] = self.inputsTraining
+            dataDict['targetsTraining'] = self.targetsTraining
+            dataDict['inputsTest'] = self.inputsTest
+            dataDict['targetsTest'] = self.targetsTest
 
         #initialization of hidden layers in RNN (optional)
         dataDict['hiddenInitTraining'] = self.hiddenInitTraining
@@ -1026,7 +1057,7 @@ class NeuralNetworkTrainingCenter():
                    batchSizeIncrease = 1,           #can be used to increase batch size after initial slower training
                    batchSizeIncreaseLoss = None,    #loss threshold, at which we switch to (larger) batch size
                    # reloadTrainedModel = '',         #load (pre-)trained model after setting up optimizer
-                   maxEpochsEst = 1000, 
+                   maxEpochsEst = 1000,
                    ):
 
         #%%++++++++++++++++++++++++++++++++++++++++
@@ -1344,13 +1375,55 @@ class NeuralNetworkTrainingCenter():
             if self.epochBestLossEst != epoch and self.epochBestLossEst != -1: 
                 self.nnModelEst = copy.deepcopy(self.nnModelBestEst)
                 print('using currently best model from validation at epoch ', self.epochBestLossEst)
-            
-            
-            
-            
+
+
+
+    ## by Lukas Andreatta
+    # Save the loss log (self.lossLog) to a npy file
+    # saves epoch and loss
+    def SaveLossLog(self, filename):
+        if not filename.lower().endswith('.npy'):
+            filename += '.npy'
         
+        dataDict = {}
+        dataDict['epoch']       = np.asarray(self.lossLog)[:,0]
+        dataDict['loss']        = np.asarray(self.lossLog)[:,1]
         
-                            
+
+        with open(filename, 'wb') as f:
+            np.save(f, dataDict, allow_pickle=True) 
+
+    ## by Lukas Andreatta
+    # Load the loss Log from a File, useful for some plotting functions like PlotLossLog
+    def LoadLossLog(self, filename):
+        with open(filename, 'rb') as f:
+            dataDict = np.load(f, allow_pickle=True).item()
+
+        # Rebuild lossLog in the same format as before
+        self.lossLog = list(zip(dataDict['epoch'], dataDict['loss']))
+
+    ## by Lukas Andreatta
+    # creates a simple plot of the loss log
+    def PlotLossLog(self, saveFile=None):
+        if not hasattr(self, 'validationResults') or not self.validationResults:
+            raise ValueError("No validation results to plot.")
+
+        epochs = np.asarray(self.lossLog)[:,0]
+        currentLoss = np.asarray(self.lossLog)[:,1]
+
+        plt.figure(figsize=(8, 5))
+        plt.plot(epochs, currentLoss, label='Loss', linestyle='--')
+        plt.yscale('log')
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        # plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.tight_layout()
+        if saveFile is None:
+            plt.show()
+        else:
+            plt.savefig(saveFile)
+
     #return loss recorded by TrainModel
     def LossLog(self):
         return np.array(self.lossLog)
@@ -1370,7 +1443,7 @@ class NeuralNetworkTrainingCenter():
             
     #load trained model, including the structure (hidden layers, etc.)
     def LoadNNModel(self, fileName):
-        self.nnModel = torch.load(fileName)
+        self.nnModel = torch.load(fileName, weights_only=False)
         if self.useErrorEstimator: 
             filenameEstimator = fileName.split('.')[0] + '_estimator.' + fileName.split('.')[1]
             self.nnModelEst = torch.load(filenameEstimator)
@@ -1642,13 +1715,13 @@ class NeuralNetworkTrainingCenter():
                         dataRef = dataRef[0].T
                     # print('i: {} data shape: {}, dataRef shape: {}'.format(i, data.shape, dataRef.shape))
                     mbs.PlotSensor([data], components=comp, componentsX=compX, newFigure=newFigure,
-                                    labels='NN train'+str(i) + labelErr, 
+                                    labels=f'NN train {i}' + labelErr, 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
-                                    colorCodeOffset=i%28, **plotOptions)
+                                    colorCodeOffset=i%8, **plotOptions)
                     mbs.PlotSensor([dataRef], components=comp, componentsX=compX, newFigure=False,
-                                    labels='Ref train'+str(i), 
+                                    labels=f'Ref train {i}', 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
-                                    colorCodeOffset=i%28,lineStyles=[':'],
+                                    colorCodeOffset=i%8,lineStyles=[':'],
                                     fileName=fileName, **plotOptions)
                     newFigure = False
 
@@ -1710,15 +1783,15 @@ class NeuralNetworkTrainingCenter():
                         dataRef = dataRef[0].T
                         
                     mbs.PlotSensor([data], components=comp, componentsX=compX, newFigure=newFigure,
-                                    labels='NN test'+str(i) + labelErr, 
+                                    labels=f'NN test {i}' + labelErr, 
                                     # labels='', 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
-                                    colorCodeOffset=i%28, **plotOptions)
+                                    colorCodeOffset=i%8, **plotOptions)
                     mbs.PlotSensor([dataRef], components=comp, componentsX=compX, newFigure=False,
-                                    labels='Ref test'+str(i), 
+                                    labels=f'Ref test {i}', 
                                     # labels='', # 'Ref ' + str(i), 
                                     xLabel = plotVars[0], yLabel=plotVars[1],
-                                    colorCodeOffset=i%28,lineStyles=[':'],
+                                    colorCodeOffset=i%8,lineStyles=[':'],
                                     fileName=fileName, **plotOptions)
                     newFigure = False
                     
@@ -1837,18 +1910,50 @@ class NeuralNetworkTrainingCenter():
             
             
         if self.verboseMode > 0:
-            print('max/mean test MSE=', roundSignificant(max(testMSE), 5), '/', roundSignificant(np.mean(testMSE), 5))
             print('max/mean training MSE=', roundSignificant(max(trainingMSE), 5), '/',roundSignificant(np.mean(trainingMSE), 5))
+            print('max/mean test MSE=', roundSignificant(max(testMSE), 5), '/', roundSignificant(np.mean(testMSE), 5))
             if self.useErrorEstimator: 
                 print('error estimator')
                 print()
+        ## for loop by Lukas Andreatta
+        # Plotting suggestion
+        # To find samples that are either good (low MSE), bad (high MSE), or normal (close to the average MSE)
+        for i, arr in  enumerate([trainingMSE, testMSE]):
+            k = 10 # how many samples to find for each category
+            arr = np.array(arr)
+            # smallest
+            smallest_idx = np.argpartition(arr, k)[:k]
+            smallest_idx = smallest_idx[np.argsort(arr[smallest_idx])] 
+            smallest = arr[smallest_idx]
+
+            # largest
+            largest_idx = np.argpartition(arr, -k)[-k:]
+            largest_idx = largest_idx[np.argsort(arr[largest_idx])]    
+            largest = arr[largest_idx]
+
+            # closest to mean
+            mean = arr.mean()
+            closest_idx = np.argpartition(np.abs(arr - mean), k)[:k]
+            closest_idx = closest_idx[np.argsort(np.abs(arr[closest_idx] - mean))]
+            closest = arr[closest_idx]
+            if False:
+                mode = list(['training', 'test'])
+                print(f'Interresting indices to Plot {mode[i]}')
+                print("Smallest MSE:",closest, "at indices:", smallest_idx)
+                print("Largest MSE:", largest, "at indices:", largest_idx)
+                print("MSE Closest to mean:", closest, "at indices:\n", closest_idx,"\n\n")
+            else:
+                if i == 1:
+                    print(closest_idx[0])
+
+            
         if measureTime and nMeasurements>0:
             print('forward evaluation total CPU time:', SmartRound2String(timeElapsed))
             print('Avg. CPU time for 1 evaluation:', SmartRound2String(timeElapsed/nMeasurements))
         if computeRMSE: 
-            return {'testMSE':testMSE, 'maxTrainingMSE':max(trainingMSE), 'testRMSE': testRMSE, 'testMSEEst': testMSEEst}
+            return {'testMSE':testMSE, 'maxTrainingMSE':max(trainingMSE), 'testRMSE': testRMSE, 'testMSEEst': testMSEEst, 'closest_idx':closest_idx}
         else: 
-            return {'testMSE':testMSE, 'maxTrainingMSE':max(trainingMSE)}
+            return {'testMSE':testMSE, 'trainingMSE':trainingMSE ,'maxTrainingMSE':max(trainingMSE), 'closest_idx':closest_idx}
     
     # Utility function of the neural network training center for plotting error estimator performance
     def EvaluateModelEstimator(self, nMax = 128, flagPlotBestWorst = False, flagPlotCorreleation=False, 
