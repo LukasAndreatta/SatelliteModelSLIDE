@@ -1,4 +1,14 @@
-# By Lukas Andreatta
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           prepareData
+#
+# Details:  Prepares simulation output data for neural network training and 
+#           saves the result
+#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
+# Copyright: See Licence.txt
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import numpy as np
 from SatelliteSlide import *
 import preProcessingLib

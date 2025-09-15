@@ -1,15 +1,14 @@
-## By Lukas Andreatta:
-# Based on simModels.py from GitHub: \url{https://github.com/peter-manzl/SLIDE}
-#+++++++
+# Based on simModels.py from: \url{https://github.com/peter-manzl/SLIDE}
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           SatelliteSlide
 #
-# Details:  Library for creating multibody simulation models for the SLIDE method. 
+# Details:  Class used to implement the satellite model in the SLIDE framework
 #
-# Author:   Peter Manzl, Johannes Gerstmayr
-# Date:     2024-09-28
-#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
 # Copyright: See Licence.txt
 #
-#+++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import exudyn as exu
 from exudyn.utilities import *
 from exudyn.FEM import *

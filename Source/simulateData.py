@@ -1,4 +1,14 @@
-# By Lukas Andreatta
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           simulateData
+#
+# Details:  Runs simulations to generate data that is (after processing) used
+#           for neural network training
+#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
+# Copyright: See Licence.txt
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import numpy as np
 
 from SatelliteSlide import *

@@ -1,3 +1,14 @@
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           computeHCB
+#
+# Details:  Script used for modal reduction, the result is saved to a .npy
+#           file
+#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
+# Copyright: See Licence.txt
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import exudyn as exu
 from exudyn.utilities import *
 from exudyn.FEM import *
@@ -6,7 +17,7 @@ import ngsolve as ngs
 from netgen.meshing import *
 from netgen.csg import *
 
-from satilliteExudynModel import __getConnectionPointNodes
+from SatilliteExudynModel import __getConnectionPointNodes
 
 source = 1 # 0 - netgen, 1 abqus
 if source == 0:

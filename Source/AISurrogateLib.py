@@ -1,6 +1,5 @@
-##
-# Modified by Lukas Andreatta
-##
+## By Lukas Andreatta:
+# Based on simModels.py from GitHub: \url{https://github.com/peter-manzl/SLIDE
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #           AISurrogteLib
 #

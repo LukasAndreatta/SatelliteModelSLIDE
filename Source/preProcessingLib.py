@@ -1,4 +1,14 @@
-# By Lukas Andreatta
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           preProcessingLib
+#
+# Details:  A library used for preprocessing, when preparing simulation output
+#           for neural network training 
+#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
+# Copyright: See Licence.txt
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import numpy as np
 from SatelliteSlide import LinearInterpolateArray
 

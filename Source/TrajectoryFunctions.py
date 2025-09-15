@@ -1,4 +1,14 @@
-# By Lukas Andreatta
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           trajectoryFunctions
+#
+# Details:  Functions that aid trajectory generation in the SatelliteModel
+#           (SatelliteSlide.py) class
+#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
+# Copyright: See Licence.txt
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import numpy as np
 
 # linear interpolation between two numpy arrays

@@ -1,4 +1,14 @@
-# By Lukas Andreatta
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#           SatilliteExudynModel
+#
+# Details:  File defining the function use to create the Exudyn Simulation
+#           model in the SatelliteModel (SatelliteSlide.py) class
+#
+# Author:   Lukas Andreatta
+# date:     2025-09-15
+# Copyright: See Licence.txt
+#
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 import exudyn as exu
 from exudyn.FEM import *
 
